@@ -1,0 +1,50 @@
+{
+  "$schema": "./config-schema.json",
+  "version": "1.0",
+  "models": [
+    {
+      "name": "OpenAI GPT-4o",
+      "displayName": "GPT-4o",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "enabled": true,
+      "apiKeys": [
+        {
+          "id": "key-openai-work",
+          "label": "Work Project",
+          "key": "sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "enabled": true
+        },
+        {
+          "id": "key-openai-personal",
+          "label": "Personal",
+          "key": "sk-proj-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "Anthropic Claude 3.5 Sonnet",
+      "displayName": "Claude 3.5 Sonnet",
+      "provider": "anthropic",
+      "baseUrl": "https://api.anthropic.com/v1",
+      "enabled": true,
+      "apiKeys": [
+        {
+          "id": "key-claude-dev",
+          "label": "Development",
+          "key": "sk-ant-admin01-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "OpenAI GPT-4o-mini",
+      "displayName": "GPT-4o-mini",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "enabled": false,
+      "apiKeys": []
+    }
+  ]
+}
