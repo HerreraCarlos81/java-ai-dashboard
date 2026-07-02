@@ -18,7 +18,6 @@ import javafx.scene.layout.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainController {
     private final ConfigManager configManager;
@@ -118,11 +117,11 @@ public class MainController {
         refreshBtn.getStyleClass().add("action-button");
         refreshBtn.setOnAction(e -> refreshData());
 
-        Button addBtn = new Button("+ Add Model");
-        addBtn.getStyleClass().add("action-button");
-        addBtn.setOnAction(e -> showAddModelDialog());
+        Button settingsBtn = new Button("Settings");
+        settingsBtn.getStyleClass().add("action-button");
+        settingsBtn.setOnAction(e -> showSettingsDialog());
 
-        bar.getChildren().addAll(refreshBtn, addBtn);
+        bar.getChildren().addAll(refreshBtn, settingsBtn);
         return bar;
     }
 
@@ -173,13 +172,14 @@ public class MainController {
         dialog.showAndWait();
     }
 
-    private void showAddModelDialog() {
-        AddModelDialog dialog = new AddModelDialog();
-        dialog.showAndWait().ifPresent(result -> {
-            if (result.length == 4 && !result[0].isEmpty()) {
-                // TODO: persist to config file
-                showAlert("Info", "Model configuration saving will be implemented in next version.\n"
-                    + "Added: " + result[0]);
+    private void showSettingsDialog() {
+        SettingsDialog dialog = new SettingsDialog(configManager);
+        dialog.showAndWait().ifPresent(r -> {
+            try {
+                configManager.loadConfig();
+                refreshData();
+            } catch (Exception e) {
+                showAlert("Error", "Failed to reload config: " + e.getMessage());
             }
         });
     }
