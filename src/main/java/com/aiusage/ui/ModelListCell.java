@@ -3,11 +3,10 @@ package com.aiusage.ui;
 import com.aiusage.model.DashboardData;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -60,45 +59,46 @@ public class ModelListCell extends ListCell<DashboardData> {
                 if (textColor.isEmpty()) mainLabel.setStyle("-fx-text-fill: #e74c3c;");
             }
 
-            Label budgetBadge = buildBudgetBadge(item);
+            Button budgetBtn = buildBudgetButton(item);
             HBox.setHgrow(infoBox, Priority.ALWAYS);
-
-            HBox row = new HBox(10, infoBox, budgetBadge);
+            HBox row = new HBox(10, infoBox, budgetBtn);
             row.setAlignment(Pos.CENTER_LEFT);
             setGraphic(row);
         }
     }
 
-    private Label buildBudgetBadge(DashboardData item) {
-        Label badge = new Label();
-        badge.setPadding(new Insets(2, 8, 2, 8));
-        badge.setStyle("-fx-border-color: #555; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-font-size: 11px; -fx-cursor: hand;");
-        badge.setCursor(Cursor.HAND);
+    private Button buildBudgetButton(DashboardData item) {
+        Button btn = new Button();
+        btn.setPadding(new Insets(4, 12, 4, 12));
 
         if (item.getMonthlyBudget() <= 0) {
-            badge.setText("\uD83D\uDCB0 Budget not set");
-            badge.setStyle(badge.getStyle() + "-fx-text-fill: #888;");
+            btn.setText("\uD83D\uDCB0 Budget not set");
+            btn.setStyle("-fx-background-color: transparent; -fx-border-color: #555; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-text-fill: #888; -fx-font-size: 11px; -fx-cursor: hand;");
         } else {
             double pct = item.getTotalCost() / item.getMonthlyBudget() * 100;
-            badge.setText(String.format("\uD83D\uDCB0 $%.0f (%.0f%%)", item.getMonthlyBudget(), pct));
+            btn.setText(String.format("\uD83D\uDCB0 $%.0f (%.0f%%)", item.getMonthlyBudget(), pct));
+            String color;
             if (pct >= 100) {
-                badge.setStyle(badge.getStyle() + "-fx-text-fill: #ff6b6b; -fx-border-color: #ff6b6b;");
+                color = "#ff6b6b";
             } else if (pct >= 75) {
-                badge.setStyle(badge.getStyle() + "-fx-text-fill: #ffb86b; -fx-border-color: #ffb86b;");
+                color = "#ffb86b";
             } else if (pct >= 50) {
-                badge.setStyle(badge.getStyle() + "-fx-text-fill: #f1fa8c; -fx-border-color: #f1fa8c;");
+                color = "#f1fa8c";
             } else {
-                badge.setStyle(badge.getStyle() + "-fx-text-fill: #4caf50; -fx-border-color: #4caf50;");
+                color = "#4caf50";
             }
+            btn.setStyle("-fx-background-color: transparent; -fx-border-color: " + color
+                + "; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-text-fill: "
+                + color + "; -fx-font-size: 11px; -fx-cursor: hand;");
         }
 
-        badge.setOnMouseClicked(e -> {
+        btn.setOnAction(e -> {
             if (budgetClickHandler != null) {
                 budgetClickHandler.accept(item.getModelName(), item.getMonthlyBudget());
             }
         });
 
-        return badge;
+        return btn;
     }
 
     private String formatTokens(long tokens) {

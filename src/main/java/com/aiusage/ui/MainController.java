@@ -17,7 +17,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class MainController {
     private final ConfigManager configManager;
@@ -29,6 +32,7 @@ public class MainController {
     private final Label totalCostLabel;
     private final Label totalTokensLabel;
     private final Label statusLabel;
+    private boolean showingKeyDetails;
 
     public MainController() {
         this.configManager = new ConfigManager();
@@ -42,6 +46,7 @@ public class MainController {
         this.statusLabel = new Label();
         this.statusLabel.getStyleClass().add("status-label");
         this.statusLabel.setManaged(false);
+        this.showingKeyDetails = false;
     }
 
     public VBox buildUI() {
@@ -108,22 +113,29 @@ public class MainController {
             cell.setBudgetClickHandler((modelName, currentBudget) -> {
                 String prompt = currentBudget > 0
                     ? "Current budget: $" + String.format("%.2f", currentBudget)
-                    : "No budget set. Enter a monthly budget:";
+                    : "No budget set. Enter a monthly budget (e.g. 50.00):";
                 TextInputDialog input = new TextInputDialog(currentBudget > 0 ? String.format("%.2f", currentBudget) : "");
                 input.setTitle("Monthly Budget");
                 input.setHeaderText("Set budget for " + modelName);
                 input.setContentText(prompt);
+                Label iconLabel = new Label("\uD83D\uDCB0");
+                iconLabel.setStyle("-fx-font-size: 24px;");
+                input.getDialogPane().setGraphic(iconLabel);
                 input.showAndWait().ifPresent(val -> {
+                    String trimmed = val.trim();
+                    if (!Pattern.matches("^\\d+(\\.\\d{1,2})?$", trimmed)) {
+                        showAlert("Invalid Format",
+                            "Enter a number with up to 2 decimal places (e.g. 50.00).");
+                        return;
+                    }
                     try {
-                        double newBudget = Double.parseDouble(val.trim());
+                        double newBudget = Double.parseDouble(trimmed);
                         configManager.getCurrentConfig().getModels().stream()
                             .filter(m -> m.getName().equals(modelName))
                             .findFirst()
                             .ifPresent(m -> m.setMonthlyBudget(newBudget));
                         configManager.saveConfig();
                         refreshData();
-                    } catch (NumberFormatException ex) {
-                        showAlert("Invalid budget", "Enter a valid number.");
                     } catch (Exception ex) {
                         showAlert("Error", "Failed to save budget: " + ex.getMessage());
                     }
@@ -132,7 +144,13 @@ public class MainController {
             return cell;
         });
         modelListView.getSelectionModel().selectedItemProperty().addListener(
-            (obs, old, selected) -> showKeyDetails(selected)
+            (obs, old, selected) -> {
+                if (selected != null && !showingKeyDetails) {
+                    showingKeyDetails = true;
+                    showKeyDetails(selected);
+                    showingKeyDetails = false;
+                }
+            }
         );
 
         container.getChildren().addAll(listTitle, modelListView);
@@ -190,7 +208,8 @@ public class MainController {
                 statusLabel.setManaged(true);
                 statusLabel.setStyle("-fx-text-fill: #e74c3c;");
             } else {
-                statusLabel.setText("Last refresh: " + java.time.LocalTime.now().toString().substring(0, 5));
+                statusLabel.setText("Last refresh: "
+                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 statusLabel.setManaged(true);
                 statusLabel.setStyle("-fx-text-fill: #4caf50;");
             }
@@ -217,6 +236,7 @@ public class MainController {
         scroll.setFitToWidth(true);
         scroll.setPrefSize(500, 300);
         dialog.getDialogPane().setContent(scroll);
+        dialog.setOnHidden(e -> Platform.runLater(() -> modelListView.requestFocus()));
         dialog.showAndWait();
     }
 
