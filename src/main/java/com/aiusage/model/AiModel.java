@@ -9,6 +9,7 @@ public class AiModel {
     private String provider;
     private String baseUrl;
     private boolean enabled;
+    private double monthlyBudget;
     private List<ApiKeyEntry> apiKeys;
 
     public AiModel() {}
@@ -31,6 +32,8 @@ public class AiModel {
     public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public double getMonthlyBudget() { return monthlyBudget; }
+    public void setMonthlyBudget(double monthlyBudget) { this.monthlyBudget = monthlyBudget; }
     public List<ApiKeyEntry> getApiKeys() { return apiKeys; }
     public void setApiKeys(List<ApiKeyEntry> apiKeys) { this.apiKeys = apiKeys; }
 }

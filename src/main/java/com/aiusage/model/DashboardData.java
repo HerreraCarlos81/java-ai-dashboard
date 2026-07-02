@@ -9,6 +9,7 @@ public class DashboardData {
     private double totalCost;
     private long totalTokens;
     private int totalRequests;
+    private double monthlyBudget;
     private List<KeySummary> keySummaries;
     private String lastError;
 
@@ -57,6 +58,8 @@ public class DashboardData {
     public void setTotalTokens(long totalTokens) { this.totalTokens = totalTokens; }
     public int getTotalRequests() { return totalRequests; }
     public void setTotalRequests(int totalRequests) { this.totalRequests = totalRequests; }
+    public double getMonthlyBudget() { return monthlyBudget; }
+    public void setMonthlyBudget(double monthlyBudget) { this.monthlyBudget = monthlyBudget; }
     public List<KeySummary> getKeySummaries() { return keySummaries; }
     public void setKeySummaries(List<KeySummary> keySummaries) { this.keySummaries = keySummaries; }
     public String getLastError() { return lastError; }

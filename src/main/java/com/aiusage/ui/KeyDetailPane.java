@@ -5,6 +5,7 @@ import com.aiusage.util.CostFormatter;
 import com.aiusage.util.TokenFormatter;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -21,6 +22,35 @@ public class KeyDetailPane extends VBox {
     }
 
     private void buildContent() {
+        if (data.getMonthlyBudget() > 0) {
+            double pct = data.getTotalCost() / data.getMonthlyBudget();
+            VBox budgetBox = new VBox(3);
+            budgetBox.setPadding(new Insets(4, 0, 8, 0));
+
+            Label budgetLabel = new Label("Budget: $"
+                + String.format("%.2f", data.getTotalCost()) + " / $"
+                + String.format("%.2f", data.getMonthlyBudget())
+                + "  (" + String.format("%.0f", pct * 100) + "%)");
+            budgetLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
+
+            ProgressBar bar = new ProgressBar(Math.min(pct, 1.0));
+            bar.setPrefWidth(300);
+            String barColor;
+            if (pct >= 1.0) {
+                barColor = "-fx-accent: #e74c3c;";
+            } else if (pct >= 0.75) {
+                barColor = "-fx-accent: #e67e22;";
+            } else if (pct >= 0.5) {
+                barColor = "-fx-accent: #f1c40f;";
+            } else {
+                barColor = "-fx-accent: #2ecc71;";
+            }
+            bar.setStyle(barColor);
+
+            budgetBox.getChildren().addAll(budgetLabel, bar);
+            getChildren().add(budgetBox);
+        }
+
         List<DashboardData.KeySummary> summaries = data.getKeySummaries();
         if (summaries == null || summaries.isEmpty()) {
             getChildren().add(new Label("No API keys configured"));

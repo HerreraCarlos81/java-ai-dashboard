@@ -16,6 +16,7 @@ public class AddModelDialog extends Dialog<ModelConfig> {
     private final TextField displayNameField;
     private final ComboBox<String> providerField;
     private final TextField baseUrlField;
+    private final TextField budgetField;
     private final TextField keyLabelField;
     private final PasswordField keyValueField;
     private final CheckBox adminCheckBox;
@@ -43,6 +44,8 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         providerField.setValue("openai");
         baseUrlField = new TextField();
         baseUrlField.setPromptText("https://api.openai.com/v1");
+        budgetField = new TextField();
+        budgetField.setPromptText("e.g. 50.00 (0 = no budget)");
 
         GridPane modelGrid = new GridPane();
         modelGrid.setHgap(10);
@@ -55,6 +58,8 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         modelGrid.add(providerField, 1, 2);
         modelGrid.add(new Label("Base URL:"), 0, 3);
         modelGrid.add(baseUrlField, 1, 3);
+        modelGrid.add(new Label("Monthly Budget ($):"), 0, 4);
+        modelGrid.add(budgetField, 1, 4);
 
         TitledPane modelPane = new TitledPane("Model", modelGrid);
         modelPane.setCollapsible(false);
@@ -134,6 +139,9 @@ public class AddModelDialog extends Dialog<ModelConfig> {
             displayNameField.setText(existing.getDisplayName());
             providerField.setValue(existing.getProvider());
             baseUrlField.setText(existing.getBaseUrl());
+            if (existing.getMonthlyBudget() > 0) {
+                budgetField.setText(String.format("%.2f", existing.getMonthlyBudget()));
+            }
             if (existing.getApiKeys() != null) {
                 keys.addAll(existing.getApiKeys());
             }
@@ -156,6 +164,7 @@ public class AddModelDialog extends Dialog<ModelConfig> {
             config.setProvider(providerField.getValue());
             config.setBaseUrl(baseUrlField.getText().trim());
             config.setEnabled(true);
+            config.setMonthlyBudget(parseBudget(budgetField.getText()));
             config.setApiKeys(new ArrayList<>(keys));
             return config;
         });
@@ -186,5 +195,14 @@ public class AddModelDialog extends Dialog<ModelConfig> {
     private String maskKey(String key) {
         if (key == null || key.length() < 8) return key;
         return key.substring(0, 4) + "..." + key.substring(key.length() - 4);
+    }
+
+    private double parseBudget(String text) {
+        if (text == null || text.isBlank()) return 0;
+        try {
+            return Double.parseDouble(text.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

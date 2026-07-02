@@ -94,6 +94,7 @@ public class ConfigManager {
     private AiModel toModel(ModelConfig mc) {
         AiModel model = new AiModel(mc.getName(), mc.getDisplayName(),
             mc.getProvider(), mc.getBaseUrl());
+        model.setMonthlyBudget(mc.getMonthlyBudget());
         if (mc.getApiKeys() != null) {
             model.setApiKeys(mc.getApiKeys().stream()
                 .filter(ModelConfig.ApiKeyConfig::isEnabled)

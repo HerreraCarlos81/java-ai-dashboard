@@ -24,6 +24,7 @@ public class UsageService {
             DashboardData dd = new DashboardData(
                 model.getName(), model.getProvider(), model.getDisplayName()
             );
+            dd.setMonthlyBudget(model.getMonthlyBudget());
             List<DashboardData.KeySummary> summaries = new ArrayList<>();
             double totalCost = 0;
             long totalTokens = 0;

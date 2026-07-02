@@ -13,17 +13,55 @@ public class ModelListCell extends ListCell<DashboardData> {
         if (empty || item == null) {
             setText(null);
             setGraphic(null);
+            setStyle("");
         } else {
-            Label mainLabel = new Label(item.getDisplayName() + "  |  "
-                + String.format("$%.2f", item.getTotalCost()) + "  |  "
-                + formatTokens(item.getTotalTokens()));
+            StringBuilder display = new StringBuilder();
+            display.append(item.getDisplayName()).append("  |  $")
+                .append(String.format("%.2f", item.getTotalCost()));
+            if (item.getMonthlyBudget() > 0) {
+                double pct = item.getTotalCost() / item.getMonthlyBudget() * 100;
+                display.append(" / $").append(String.format("%.2f", item.getMonthlyBudget()))
+                    .append("  (").append(String.format("%.0f", pct)).append("%)");
+            }
+            display.append("  |  ").append(formatTokens(item.getTotalTokens()));
+
+            Label mainLabel = new Label(display.toString());
             VBox box = new VBox(mainLabel);
+
+            String bgColor = "";
+            String textColor = "";
+            if (item.getMonthlyBudget() > 0) {
+                double pct = item.getTotalCost() / item.getMonthlyBudget() * 100;
+                if (pct >= 100) {
+                    bgColor = "-fx-background-color: #5c1a1a;";
+                    textColor = "-fx-text-fill: #ff6b6b; -fx-font-weight: bold;";
+                } else if (pct >= 75) {
+                    bgColor = "-fx-background-color: #5c3a1a;";
+                    textColor = "-fx-text-fill: #ffb86b;";
+                } else if (pct >= 50) {
+                    bgColor = "-fx-background-color: #5c5a1a;";
+                    textColor = "-fx-text-fill: #f1fa8c;";
+                }
+            }
+
+            if (!textColor.isEmpty()) {
+                mainLabel.setStyle(textColor);
+            }
+            if (!bgColor.isEmpty()) {
+                setStyle(bgColor);
+            } else {
+                setStyle("");
+            }
+
             if (item.hasError()) {
                 Label errLabel = new Label("Error: " + item.getLastError());
                 errLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 10;");
                 box.getChildren().add(errLabel);
-                mainLabel.setStyle("-fx-text-fill: #e74c3c;");
+                if (textColor.isEmpty()) {
+                    mainLabel.setStyle("-fx-text-fill: #e74c3c;");
+                }
             }
+
             setGraphic(box);
         }
     }
