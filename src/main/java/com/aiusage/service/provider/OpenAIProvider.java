@@ -46,15 +46,17 @@ public class OpenAIProvider implements AiProvider {
             .get()
             .build();
 
+        String fullUrl = url.toString();
+
         try (Response response = client.newCall(request).execute()) {
             String body = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
                 String hint = response.code() == 404
-                    ? "The Usage API requires an Admin API key (Settings → Organization → Admin keys), not a project key."
+                    ? "URL: " + fullUrl + " | Requires an Admin key (Settings → Organization → Admin keys)"
                     : "";
                 throw new IOException("OpenAI usage API error: " + response.code()
                     + (hint.isEmpty() ? "" : " - " + hint)
-                    + " " + body);
+                    + " | Response: " + body.substring(0, Math.min(body.length(), 200)));
             }
             return parseUsageResponse(body);
         }
@@ -82,15 +84,17 @@ public class OpenAIProvider implements AiProvider {
             .get()
             .build();
 
+        String fullUrl = url.toString();
+
         try (Response response = client.newCall(request).execute()) {
             String body = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
                 String hint = response.code() == 404
-                    ? "The Costs API requires an Admin API key (Settings → Organization → Admin keys), not a project key."
+                    ? "URL: " + fullUrl + " | Requires an Admin key"
                     : "";
                 throw new IOException("OpenAI cost API error: " + response.code()
                     + (hint.isEmpty() ? "" : " - " + hint)
-                    + " " + body);
+                    + " | Response: " + body.substring(0, Math.min(body.length(), 200)));
             }
             return parseCostResponse(body);
         }
