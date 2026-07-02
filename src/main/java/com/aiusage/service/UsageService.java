@@ -55,10 +55,10 @@ public class UsageService {
                             .collect(Collectors.groupingBy(UsageData::getApiKeyId));
 
                         Map<String, String> idToLabel = new HashMap<>();
-                        if (model.getApiKeys() != null) {
-                            for (ApiKeyEntry k : model.getApiKeys()) {
-                                idToLabel.put(k.getId(), k.getLabel());
-                            }
+                        try {
+                            idToLabel = provider.fetchApiKeyNames(adminKey.getKey(), model.getBaseUrl());
+                        } catch (Exception ex) {
+                            System.err.println("Could not fetch API key names: " + ex.getMessage());
                         }
 
                         Set<String> allKeyIds = new HashSet<>();

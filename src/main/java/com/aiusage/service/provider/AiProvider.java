@@ -4,6 +4,7 @@ import com.aiusage.model.CostData;
 import com.aiusage.model.UsageData;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface AiProvider {
     String name();
@@ -17,4 +18,8 @@ public interface AiProvider {
         throws Exception;
 
     boolean testConnection(String apiKey, String baseUrl);
+
+    default Map<String, String> fetchApiKeyNames(String apiKey, String baseUrl) throws Exception {
+        return Map.of();
+    }
 }

@@ -112,6 +112,54 @@ public class OpenAIProvider implements AiProvider {
         }
     }
 
+    @Override
+    public java.util.Map<String, String> fetchApiKeyNames(String apiKey, String baseUrl) throws Exception {
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        String after = null;
+
+        for (int page = 0; page < 10; page++) {
+            HttpUrl.Builder urlBuilder = HttpUrl.parse(origin + "/v1/organization/admin_api_keys").newBuilder()
+                .addQueryParameter("limit", "100");
+            if (after != null) {
+                urlBuilder.addQueryParameter("after", after);
+            }
+            Request request = new Request.Builder()
+                .url(urlBuilder.build())
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .get()
+                .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                String body = response.body() != null ? response.body().string() : "";
+                if (!response.isSuccessful()) {
+                    System.err.println("fetchApiKeyNames HTTP " + response.code() + ": " + body);
+                    return result;
+                }
+                com.fasterxml.jackson.databind.ObjectMapper mapper =
+                    new com.fasterxml.jackson.databind.ObjectMapper();
+                var root = mapper.readTree(body);
+                var data = root.get("data");
+                if (data != null && data.isArray()) {
+                    for (var key : data) {
+                        String id = key.path("id").asText(null);
+                        String name = key.path("name").asText(null);
+                        if (id != null && name != null) {
+                            result.put(id, name);
+                        }
+                    }
+                }
+                boolean hasMore = root.path("has_more").asBoolean(false);
+                if (!hasMore) break;
+                after = root.path("last_id").asText(null);
+                if (after == null) break;
+            }
+        }
+        return result;
+    }
+
     private List<UsageData> parseUsageResponse(String json) {
         List<UsageData> results = new ArrayList<>();
         try {
