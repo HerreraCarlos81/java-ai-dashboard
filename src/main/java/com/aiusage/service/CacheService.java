@@ -20,8 +20,8 @@ public class CacheService {
         System.getProperty("user.home"), ".ai-usage-dashboard", "cache"
     );
     private final ObjectMapper mapper;
-    private final Map<String, List<UsageData>> usageCache;
-    private final Map<String, List<CostData>> costCache;
+    private final Map<String, CacheEntry<List<UsageData>>> usageCache;
+    private final Map<String, CacheEntry<List<CostData>>> costCache;
     private final long cacheTtlMinutes;
 
     public CacheService() {
@@ -36,14 +36,15 @@ public class CacheService {
                                             String baseUrl, LocalDate start, LocalDate end,
                                             String keyId) throws Exception {
         String cacheKey = keyId + "_usage_" + start + "_" + end;
-        if (usageCache.containsKey(cacheKey)) {
-            return usageCache.get(cacheKey);
+        CacheEntry<List<UsageData>> entry = usageCache.get(cacheKey);
+        if (entry != null && !entry.isExpired(cacheTtlMinutes)) {
+            return entry.getData();
         }
         List<UsageData> data = provider.fetchUsage(apiKey, baseUrl, start, end);
         for (UsageData ud : data) {
             if (ud.getApiKeyId() == null) ud.setApiKeyId(keyId);
         }
-        usageCache.put(cacheKey, data);
+        usageCache.put(cacheKey, new CacheEntry<>(data));
         return data;
     }
 
@@ -51,19 +52,36 @@ public class CacheService {
                                            String baseUrl, LocalDate start, LocalDate end,
                                            String keyId) throws Exception {
         String cacheKey = keyId + "_cost_" + start + "_" + end;
-        if (costCache.containsKey(cacheKey)) {
-            return costCache.get(cacheKey);
+        CacheEntry<List<CostData>> entry = costCache.get(cacheKey);
+        if (entry != null && !entry.isExpired(cacheTtlMinutes)) {
+            return entry.getData();
         }
         List<CostData> data = provider.fetchCosts(apiKey, baseUrl, start, end);
         for (CostData cd : data) {
             if (cd.getApiKeyId() == null) cd.setApiKeyId(keyId);
         }
-        costCache.put(cacheKey, data);
+        costCache.put(cacheKey, new CacheEntry<>(data));
         return data;
     }
 
     public void invalidateCache() {
         usageCache.clear();
         costCache.clear();
+    }
+
+    private static class CacheEntry<T> {
+        private final T data;
+        private final long timestamp;
+
+        CacheEntry(T data) {
+            this.data = data;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        T getData() { return data; }
+
+        boolean isExpired(long ttlMinutes) {
+            return System.currentTimeMillis() - timestamp > ttlMinutes * 60_000;
+        }
     }
 }

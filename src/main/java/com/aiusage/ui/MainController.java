@@ -136,6 +136,7 @@ public class MainController {
 
     private void refreshData() {
         try {
+            cacheService.invalidateCache();
             List<AiModel> models = configManager.getModels();
             if (models.isEmpty()) {
                 modelData.clear();
