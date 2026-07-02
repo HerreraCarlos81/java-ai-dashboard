@@ -33,6 +33,8 @@ public class MainController {
     private final Label totalTokensLabel;
     private final Label statusLabel;
     private boolean showingKeyDetails;
+    private final Button refreshBtn;
+    private final ProgressIndicator spinner;
 
     public MainController() {
         this.configManager = new ConfigManager();
@@ -47,6 +49,10 @@ public class MainController {
         this.statusLabel.getStyleClass().add("status-label");
         this.statusLabel.setManaged(false);
         this.showingKeyDetails = false;
+        this.refreshBtn = new Button("Refresh");
+        this.spinner = new ProgressIndicator();
+        this.spinner.setPrefSize(18, 18);
+        this.spinner.setVisible(false);
     }
 
     public VBox buildUI() {
@@ -162,7 +168,6 @@ public class MainController {
         bar.setPadding(new Insets(10, 0, 0, 0));
         bar.setAlignment(Pos.CENTER_RIGHT);
 
-        Button refreshBtn = new Button("Refresh");
         refreshBtn.getStyleClass().add("action-button");
         refreshBtn.setOnAction(e -> refreshData());
 
@@ -170,7 +175,7 @@ public class MainController {
         settingsBtn.getStyleClass().add("action-button");
         settingsBtn.setOnAction(e -> showSettingsDialog());
 
-        bar.getChildren().addAll(refreshBtn, settingsBtn);
+        bar.getChildren().addAll(refreshBtn, spinner, settingsBtn);
         return bar;
     }
 
@@ -184,38 +189,55 @@ public class MainController {
     }
 
     private void refreshData() {
-        try {
-            cacheService.invalidateCache();
-            statusLabel.setManaged(false);
-            List<AiModel> models = configManager.getModels();
-            if (models.isEmpty()) {
-                modelData.clear();
-                totalCostLabel.setText("$0.00");
-                totalTokensLabel.setText("0");
-                statusLabel.setText("No models configured. Click Settings to add one.");
-                statusLabel.setManaged(true);
-                return;
+        refreshBtn.setDisable(true);
+        spinner.setVisible(true);
+        cacheService.invalidateCache();
+        statusLabel.setManaged(false);
+
+        new Thread(() -> {
+            try {
+                List<AiModel> models = configManager.getModels();
+                if (models.isEmpty()) {
+                    Platform.runLater(() -> {
+                        modelData.clear();
+                        totalCostLabel.setText("$0.00");
+                        totalTokensLabel.setText("0");
+                        statusLabel.setText("No models configured. Click Settings to add one.");
+                        statusLabel.setManaged(true);
+                        refreshBtn.setDisable(false);
+                        spinner.setVisible(false);
+                    });
+                    return;
+                }
+                List<DashboardData> dashboard = usageService.refreshDashboard(models);
+                Platform.runLater(() -> {
+                    modelData.setAll(dashboard);
+                    updateSummary(dashboard);
+                    String globalError = dashboard.stream()
+                        .filter(DashboardData::hasError)
+                        .map(d -> d.getDisplayName() + ": " + d.getLastError())
+                        .collect(java.util.stream.Collectors.joining(" | "));
+                    if (!globalError.isEmpty()) {
+                        statusLabel.setText(globalError);
+                        statusLabel.setManaged(true);
+                        statusLabel.setStyle("-fx-text-fill: #e74c3c;");
+                    } else {
+                        statusLabel.setText("Last refresh: "
+                            + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+                        statusLabel.setManaged(true);
+                        statusLabel.setStyle("-fx-text-fill: #4caf50;");
+                    }
+                    refreshBtn.setDisable(false);
+                    spinner.setVisible(false);
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    showAlert("Error", "Failed to refresh data: " + e.getMessage());
+                    refreshBtn.setDisable(false);
+                    spinner.setVisible(false);
+                });
             }
-            List<DashboardData> dashboard = usageService.refreshDashboard(models);
-            modelData.setAll(dashboard);
-            updateSummary(dashboard);
-            String globalError = dashboard.stream()
-                .filter(DashboardData::hasError)
-                .map(d -> d.getDisplayName() + ": " + d.getLastError())
-                .collect(java.util.stream.Collectors.joining(" | "));
-            if (!globalError.isEmpty()) {
-                statusLabel.setText(globalError);
-                statusLabel.setManaged(true);
-                statusLabel.setStyle("-fx-text-fill: #e74c3c;");
-            } else {
-                statusLabel.setText("Last refresh: "
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
-                statusLabel.setManaged(true);
-                statusLabel.setStyle("-fx-text-fill: #4caf50;");
-            }
-        } catch (Exception e) {
-            showAlert("Error", "Failed to refresh data: " + e.getMessage());
-        }
+        }).start();
     }
 
     private void updateSummary(List<DashboardData> dashboard) {

@@ -76,7 +76,7 @@ public class ModelListCell extends ListCell<DashboardData> {
             btn.setStyle("-fx-background-color: transparent; -fx-border-color: #555; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-text-fill: #888; -fx-font-size: 11px; -fx-cursor: hand;");
         } else {
             double pct = item.getTotalCost() / item.getMonthlyBudget() * 100;
-            btn.setText(String.format("\uD83D\uDCB0 $%.0f (%.0f%%)", item.getMonthlyBudget(), pct));
+            btn.setText(String.format("\uD83D\uDCB0 $%.2f (%.0f%%)", item.getMonthlyBudget(), pct));
             String color;
             if (pct >= 100) {
                 color = "#ff6b6b";
@@ -102,8 +102,8 @@ public class ModelListCell extends ListCell<DashboardData> {
     }
 
     private String formatTokens(long tokens) {
-        if (tokens < 1_000) return tokens + " tok";
-        if (tokens < 1_000_000) return String.format("%.1fK tok", tokens / 1000.0);
-        return String.format("%.1fM tok", tokens / 1_000_000.0);
+        if (tokens < 1_000) return tokens + " tokens";
+        if (tokens < 1_000_000) return String.format("%.1fK tokens", tokens / 1000.0);
+        return String.format("%.1fM tokens", tokens / 1_000_000.0);
     }
 }
