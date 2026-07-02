@@ -31,68 +31,119 @@ public class UsageService {
 
             StringBuilder errors = new StringBuilder();
 
-            if ("openai".equals(model.getProvider())) {
-                ApiKeyEntry adminKey = model.getApiKeys() == null ? null
-                    : model.getApiKeys().stream().filter(ApiKeyEntry::isAdmin).findFirst().orElse(null);
+            ApiKeyEntry adminKey = model.getApiKeys() == null ? null
+                : model.getApiKeys().stream().filter(ApiKeyEntry::isAdmin).findFirst().orElse(null);
 
-                if (adminKey != null) {
+            if ("openai".equals(model.getProvider()) && adminKey != null) {
+                try {
+                    AiProvider provider = ProviderFactory.getProvider("openai");
+                    List<CostData> allCosts = cacheService.getOrFetchCosts(
+                        provider, adminKey.getKey(), model.getBaseUrl(),
+                        monthStart, now, model.getName() + "_admin"
+                    );
+                    List<UsageData> allUsage = cacheService.getOrFetchUsage(
+                        provider, adminKey.getKey(), model.getBaseUrl(),
+                        monthStart, now, model.getName() + "_admin"
+                    );
+
+                    Map<String, List<CostData>> costsByKey = allCosts.stream()
+                        .filter(c -> c.getApiKeyId() != null && !c.getApiKeyId().isEmpty())
+                        .collect(Collectors.groupingBy(CostData::getApiKeyId));
+                    Map<String, List<UsageData>> usageByKey = allUsage.stream()
+                        .filter(u -> u.getApiKeyId() != null && !u.getApiKeyId().isEmpty())
+                        .collect(Collectors.groupingBy(UsageData::getApiKeyId));
+
+                    Map<String, String> idToLabel = new HashMap<>();
                     try {
-                        AiProvider provider = ProviderFactory.getProvider("openai");
-                        List<CostData> allCosts = cacheService.getOrFetchCosts(
-                            provider, adminKey.getKey(), model.getBaseUrl(),
-                            monthStart, now, model.getName() + "_admin"
-                        );
-                        List<UsageData> allUsage = cacheService.getOrFetchUsage(
-                            provider, adminKey.getKey(), model.getBaseUrl(),
-                            monthStart, now, model.getName() + "_admin"
-                        );
-
-                        Map<String, List<CostData>> costsByKey = allCosts.stream()
-                            .filter(c -> c.getApiKeyId() != null && !c.getApiKeyId().isEmpty())
-                            .collect(Collectors.groupingBy(CostData::getApiKeyId));
-                        Map<String, List<UsageData>> usageByKey = allUsage.stream()
-                            .filter(u -> u.getApiKeyId() != null && !u.getApiKeyId().isEmpty())
-                            .collect(Collectors.groupingBy(UsageData::getApiKeyId));
-
-                        Map<String, String> idToLabel = new HashMap<>();
-                        try {
-                            idToLabel = provider.fetchApiKeyNames(adminKey.getKey(), model.getBaseUrl());
-                        } catch (Exception ex) {
-                            System.err.println("Could not fetch API key names: " + ex.getMessage());
-                        }
-
-                        Set<String> allKeyIds = new HashSet<>();
-                        allKeyIds.addAll(costsByKey.keySet());
-                        allKeyIds.addAll(usageByKey.keySet());
-
-                        for (String apiKeyId : allKeyIds) {
-                            double keyCost = costsByKey.getOrDefault(apiKeyId, List.of()).stream()
-                                .mapToDouble(CostData::getAmount).sum();
-                            long keyTokens = usageByKey.getOrDefault(apiKeyId, List.of()).stream()
-                                .mapToLong(UsageData::getTotalTokens).sum();
-                            int keyRequests = usageByKey.getOrDefault(apiKeyId, List.of()).stream()
-                                .mapToInt(UsageData::getNumRequests).sum();
-
-                            String label = idToLabel.getOrDefault(apiKeyId, apiKeyId);
-
-                            summaries.add(new DashboardData.KeySummary(
-                                apiKeyId, label, keyCost, keyTokens, keyRequests
-                            ));
-                            totalCost += keyCost;
-                            totalTokens += keyTokens;
-                            totalRequests += keyRequests;
-                        }
-                    } catch (Exception e) {
-                        String msg = "Admin key fetch failed: " + e.getMessage();
-                        System.err.println(msg);
-                        errors.append(msg).append(" | ");
+                        idToLabel = provider.fetchApiKeyNames(adminKey.getKey(), model.getBaseUrl());
+                    } catch (Exception ex) {
+                        System.err.println("Could not fetch API key names: " + ex.getMessage());
                     }
+
+                    Set<String> allKeyIds = new HashSet<>();
+                    allKeyIds.addAll(costsByKey.keySet());
+                    allKeyIds.addAll(usageByKey.keySet());
+
+                    for (String apiKeyId : allKeyIds) {
+                        double keyCost = costsByKey.getOrDefault(apiKeyId, List.of()).stream()
+                            .mapToDouble(CostData::getAmount).sum();
+                        long keyTokens = usageByKey.getOrDefault(apiKeyId, List.of()).stream()
+                            .mapToLong(UsageData::getTotalTokens).sum();
+                        int keyRequests = usageByKey.getOrDefault(apiKeyId, List.of()).stream()
+                            .mapToInt(UsageData::getNumRequests).sum();
+
+                        String label = idToLabel.getOrDefault(apiKeyId, apiKeyId);
+
+                        summaries.add(new DashboardData.KeySummary(
+                            apiKeyId, label, keyCost, keyTokens, keyRequests
+                        ));
+                        totalCost += keyCost;
+                        totalTokens += keyTokens;
+                        totalRequests += keyRequests;
+                    }
+                } catch (Exception e) {
+                    String msg = "Admin key fetch failed: " + e.getMessage();
+                    System.err.println(msg);
+                    errors.append(msg).append(" | ");
+                }
+            } else if ("anthropic".equals(model.getProvider()) && adminKey != null) {
+                try {
+                    AiProvider provider = ProviderFactory.getProvider("anthropic");
+                    List<UsageData> allUsage = cacheService.getOrFetchUsage(
+                        provider, adminKey.getKey(), model.getBaseUrl(),
+                        monthStart, now, model.getName() + "_admin"
+                    );
+
+                    List<CostData> allCosts = cacheService.getOrFetchCosts(
+                        provider, adminKey.getKey(), model.getBaseUrl(),
+                        monthStart, now, model.getName() + "_admin"
+                    );
+
+                    Map<String, List<UsageData>> usageByKey = allUsage.stream()
+                        .filter(u -> u.getApiKeyId() != null && !u.getApiKeyId().isEmpty())
+                        .collect(Collectors.groupingBy(UsageData::getApiKeyId));
+
+                    double totalOrgCost = allCosts.stream()
+                        .mapToDouble(CostData::getAmount).sum();
+                    long totalOrgTokens = allUsage.stream()
+                        .mapToLong(UsageData::getTotalTokens).sum();
+
+                    Map<String, String> idToLabel = new HashMap<>();
+                    try {
+                        idToLabel = provider.fetchApiKeyNames(adminKey.getKey(), model.getBaseUrl());
+                    } catch (Exception ex) {
+                        System.err.println("Could not fetch API key names: " + ex.getMessage());
+                    }
+
+                    for (Map.Entry<String, List<UsageData>> entry : usageByKey.entrySet()) {
+                        String apiKeyId = entry.getKey();
+                        long keyTokens = entry.getValue().stream()
+                            .mapToLong(UsageData::getTotalTokens).sum();
+                        int keyRequests = entry.getValue().stream()
+                            .mapToInt(UsageData::getNumRequests).sum();
+                        double keyCost = totalOrgTokens > 0
+                            ? totalOrgCost * ((double) keyTokens / totalOrgTokens)
+                            : 0;
+
+                        String label = idToLabel.getOrDefault(apiKeyId, apiKeyId);
+
+                        summaries.add(new DashboardData.KeySummary(
+                            apiKeyId, label, keyCost, keyTokens, keyRequests
+                        ));
+                        totalCost += keyCost;
+                        totalTokens += keyTokens;
+                        totalRequests += keyRequests;
+                    }
+                } catch (Exception e) {
+                    String msg = "Admin key fetch failed: " + e.getMessage();
+                    System.err.println(msg);
+                    errors.append(msg).append(" | ");
                 }
             }
 
             if (summaries.isEmpty() && model.getApiKeys() != null) {
                 for (ApiKeyEntry key : model.getApiKeys()) {
-                    if (key.isAdmin() && "openai".equals(model.getProvider())) continue;
+                    if (key.isAdmin()) continue;
                     try {
                         AiProvider provider = ProviderFactory.getProvider(model.getProvider());
                         List<CostData> costs = cacheService.getOrFetchCosts(

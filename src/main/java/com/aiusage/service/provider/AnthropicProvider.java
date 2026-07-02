@@ -7,8 +7,7 @@ import okhttp3.*;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class AnthropicProvider implements AiProvider {
     private static final MediaType JSON = MediaType.parse("application/json");
@@ -34,6 +33,8 @@ public class AnthropicProvider implements AiProvider {
             .addQueryParameter("ending_at", endDate.plusDays(1).atStartOfDay().format(fmt))
             .addQueryParameter("bucket_width", "1d")
             .addQueryParameter("limit", "31")
+            .addQueryParameter("group_by[]", "api_key_id")
+            .addQueryParameter("group_by[]", "model")
             .build();
 
         Request request = new Request.Builder()
@@ -46,7 +47,7 @@ public class AnthropicProvider implements AiProvider {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("Anthropic API error: " + response.code() + " " + response.body().string());
+                throw new IOException("Anthropic usage API error: " + response.code() + " " + response.body().string());
             }
             String body = response.body().string();
             return parseUsageResponse(body);
@@ -75,7 +76,7 @@ public class AnthropicProvider implements AiProvider {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("Anthropic Cost API error: " + response.code());
+                throw new IOException("Anthropic cost API error: " + response.code());
             }
             String body = response.body().string();
             return parseCostResponse(body);
@@ -90,6 +91,54 @@ public class AnthropicProvider implements AiProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    @Override
+    public Map<String, String> fetchApiKeyNames(String apiKey, String baseUrl) throws Exception {
+        Map<String, String> result = new HashMap<>();
+        String after = null;
+
+        for (int page = 0; page < 10; page++) {
+            HttpUrl.Builder urlBuilder = HttpUrl.parse(baseUrl + "/organizations/api_keys").newBuilder()
+                .addQueryParameter("limit", "100")
+                .addQueryParameter("status", "active");
+            if (after != null) {
+                urlBuilder.addQueryParameter("after_id", after);
+            }
+            Request request = new Request.Builder()
+                .url(urlBuilder.build())
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", "2023-06-01")
+                .header("Content-Type", "application/json")
+                .get()
+                .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                String body = response.body() != null ? response.body().string() : "";
+                if (!response.isSuccessful()) {
+                    System.err.println("fetchApiKeyNames HTTP " + response.code() + ": " + body);
+                    return result;
+                }
+                com.fasterxml.jackson.databind.ObjectMapper mapper =
+                    new com.fasterxml.jackson.databind.ObjectMapper();
+                var root = mapper.readTree(body);
+                var data = root.get("data");
+                if (data != null && data.isArray()) {
+                    for (var key : data) {
+                        String id = key.path("id").asText(null);
+                        String name = key.path("name").asText(null);
+                        if (id != null && name != null) {
+                            result.put(id, name);
+                        }
+                    }
+                }
+                boolean hasMore = root.path("has_more").asBoolean(false);
+                if (!hasMore) break;
+                after = root.path("last_id").asText(null);
+                if (after == null) break;
+            }
+        }
+        return result;
     }
 
     private List<UsageData> parseUsageResponse(String json) {
@@ -153,6 +202,7 @@ public class AnthropicProvider implements AiProvider {
                             if (r.has("model") && !r.path("model").isNull()) {
                                 cd.setModel(r.path("model").asText());
                             }
+
                             results.add(cd);
                         }
                     }
