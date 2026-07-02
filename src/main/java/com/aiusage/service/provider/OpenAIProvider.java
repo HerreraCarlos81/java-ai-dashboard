@@ -30,8 +30,9 @@ public class OpenAIProvider implements AiProvider {
         long startEpoch = startDate.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
         long endEpoch = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
 
-        String adminBase = baseUrl.replace("/v1", "").replace("v1", "");
-        HttpUrl url = HttpUrl.parse(adminBase + "/v1/organization/usage/completions").newBuilder()
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
+        HttpUrl url = HttpUrl.parse(origin + "/v1/organization/usage/completions").newBuilder()
             .addQueryParameter("start_time", String.valueOf(startEpoch))
             .addQueryParameter("end_time", String.valueOf(endEpoch))
             .addQueryParameter("bucket_width", "1d")
@@ -68,8 +69,9 @@ public class OpenAIProvider implements AiProvider {
         long startEpoch = startDate.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
         long endEpoch = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
 
-        String adminBase = baseUrl.replace("/v1", "").replace("v1", "");
-        HttpUrl url = HttpUrl.parse(adminBase + "/v1/organization/costs").newBuilder()
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
+        HttpUrl url = HttpUrl.parse(origin + "/v1/organization/costs").newBuilder()
             .addQueryParameter("start_time", String.valueOf(startEpoch))
             .addQueryParameter("end_time", String.valueOf(endEpoch))
             .addQueryParameter("bucket_width", "1d")
