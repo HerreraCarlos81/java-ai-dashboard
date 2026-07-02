@@ -43,7 +43,15 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         providerField.getItems().addAll("openai", "anthropic");
         providerField.setValue("openai");
         baseUrlField = new TextField();
-        baseUrlField.setPromptText("https://api.openai.com/v1");
+        baseUrlField.setPromptText("auto-filled from provider selection");
+        providerField.valueProperty().addListener((obs, old, p) -> {
+            if ("openai".equals(p)) {
+                baseUrlField.setText("https://api.openai.com/v1");
+            } else if ("anthropic".equals(p)) {
+                baseUrlField.setText("https://api.anthropic.com/v1");
+            }
+        });
+        baseUrlField.setText("https://api.openai.com/v1");
         budgetField = new TextField();
         budgetField.setPromptText("e.g. 50.00 (0 = no budget)");
 

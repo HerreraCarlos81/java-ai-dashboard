@@ -28,7 +28,9 @@ public class AnthropicProvider implements AiProvider {
                                        LocalDate startDate, LocalDate endDate) throws Exception {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-        HttpUrl url = HttpUrl.parse(baseUrl + "/organizations/usage_report/messages").newBuilder()
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
+        HttpUrl url = HttpUrl.parse(origin + "/v1/organizations/usage_report/messages").newBuilder()
             .addQueryParameter("starting_at", startDate.atStartOfDay().format(fmt))
             .addQueryParameter("ending_at", endDate.plusDays(1).atStartOfDay().format(fmt))
             .addQueryParameter("bucket_width", "1d")
@@ -59,7 +61,9 @@ public class AnthropicProvider implements AiProvider {
                                       LocalDate startDate, LocalDate endDate) throws Exception {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-        HttpUrl url = HttpUrl.parse(baseUrl + "/organizations/cost_report").newBuilder()
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
+        HttpUrl url = HttpUrl.parse(origin + "/v1/organizations/cost_report").newBuilder()
             .addQueryParameter("starting_at", startDate.atStartOfDay().format(fmt))
             .addQueryParameter("ending_at", endDate.plusDays(1).atStartOfDay().format(fmt))
             .addQueryParameter("bucket_width", "1d")
@@ -97,9 +101,11 @@ public class AnthropicProvider implements AiProvider {
     public Map<String, String> fetchApiKeyNames(String apiKey, String baseUrl) throws Exception {
         Map<String, String> result = new HashMap<>();
         String after = null;
+        HttpUrl parsedBase = HttpUrl.parse(baseUrl);
+        String origin = parsedBase.scheme() + "://" + parsedBase.host();
 
         for (int page = 0; page < 10; page++) {
-            HttpUrl.Builder urlBuilder = HttpUrl.parse(baseUrl + "/organizations/api_keys").newBuilder()
+            HttpUrl.Builder urlBuilder = HttpUrl.parse(origin + "/v1/organizations/api_keys").newBuilder()
                 .addQueryParameter("limit", "100")
                 .addQueryParameter("status", "active");
             if (after != null) {
