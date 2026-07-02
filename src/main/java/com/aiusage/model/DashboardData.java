@@ -10,6 +10,7 @@ public class DashboardData {
     private long totalTokens;
     private int totalRequests;
     private List<KeySummary> keySummaries;
+    private String lastError;
 
     public static class KeySummary {
         private String keyId;
@@ -17,13 +18,19 @@ public class DashboardData {
         private double cost;
         private long tokens;
         private int requests;
+        private String errorMessage;
 
         public KeySummary(String keyId, String keyLabel, double cost, long tokens, int requests) {
+            this(keyId, keyLabel, cost, tokens, requests, null);
+        }
+
+        public KeySummary(String keyId, String keyLabel, double cost, long tokens, int requests, String errorMessage) {
             this.keyId = keyId;
             this.keyLabel = keyLabel;
             this.cost = cost;
             this.tokens = tokens;
             this.requests = requests;
+            this.errorMessage = errorMessage;
         }
 
         public String getKeyId() { return keyId; }
@@ -31,6 +38,8 @@ public class DashboardData {
         public double getCost() { return cost; }
         public long getTokens() { return tokens; }
         public int getRequests() { return requests; }
+        public String getErrorMessage() { return errorMessage; }
+        public boolean hasError() { return errorMessage != null; }
     }
 
     public DashboardData(String modelName, String provider, String displayName) {
@@ -50,4 +59,7 @@ public class DashboardData {
     public void setTotalRequests(int totalRequests) { this.totalRequests = totalRequests; }
     public List<KeySummary> getKeySummaries() { return keySummaries; }
     public void setKeySummaries(List<KeySummary> keySummaries) { this.keySummaries = keySummaries; }
+    public String getLastError() { return lastError; }
+    public void setLastError(String lastError) { this.lastError = lastError; }
+    public boolean hasError() { return lastError != null && !lastError.isEmpty(); }
 }

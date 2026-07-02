@@ -40,6 +40,13 @@ public class KeyDetailPane extends VBox {
             detailLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #888;");
 
             keyBox.getChildren().addAll(headerLabel, detailLabel);
+
+            if (ks.hasError()) {
+                Label errLabel = new Label("Error: " + ks.getErrorMessage());
+                errLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 10px;");
+                keyBox.getChildren().add(errLabel);
+            }
+
             getChildren().add(keyBox);
         }
     }

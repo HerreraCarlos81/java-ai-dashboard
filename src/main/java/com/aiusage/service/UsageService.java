@@ -29,6 +29,7 @@ public class UsageService {
             long totalTokens = 0;
             int totalRequests = 0;
 
+            StringBuilder errors = new StringBuilder();
             if (model.getApiKeys() != null) {
                 for (ApiKeyEntry key : model.getApiKeys()) {
                     try {
@@ -53,13 +54,17 @@ public class UsageService {
                         totalTokens += keyTokens;
                         totalRequests += keyRequests;
                     } catch (Exception e) {
-                        System.err.println("Error fetching data for key " + key.getLabel()
-                            + ": " + e.getMessage());
+                        String msg = key.getLabel() + ": " + e.getMessage();
+                        System.err.println("Error fetching data for key " + msg);
                         summaries.add(new DashboardData.KeySummary(
-                            key.getId(), key.getLabel(), 0, 0, 0
+                            key.getId(), key.getLabel(), 0, 0, 0, msg
                         ));
+                        errors.append(msg).append(" | ");
                     }
                 }
+            }
+            if (errors.length() > 0) {
+                dd.setLastError(errors.substring(0, errors.length() - 3));
             }
 
             dd.setTotalCost(totalCost);

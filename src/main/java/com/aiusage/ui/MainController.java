@@ -28,6 +28,7 @@ public class MainController {
     private final Label headerLabel;
     private final Label totalCostLabel;
     private final Label totalTokensLabel;
+    private final Label statusLabel;
 
     public MainController() {
         this.configManager = new ConfigManager();
@@ -38,6 +39,9 @@ public class MainController {
         this.headerLabel = new Label();
         this.totalCostLabel = new Label();
         this.totalTokensLabel = new Label();
+        this.statusLabel = new Label();
+        this.statusLabel.getStyleClass().add("status-label");
+        this.statusLabel.setManaged(false);
     }
 
     public VBox buildUI() {
@@ -50,7 +54,7 @@ public class MainController {
         VBox listContainer = buildListContainer();
         HBox buttonBar = buildButtonBar();
 
-        root.getChildren().addAll(header, summaryBar, listContainer, buttonBar);
+        root.getChildren().addAll(header, summaryBar, listContainer, buttonBar, statusLabel);
         VBox.setVgrow(listContainer, Priority.ALWAYS);
         return root;
     }
@@ -137,16 +141,32 @@ public class MainController {
     private void refreshData() {
         try {
             cacheService.invalidateCache();
+            statusLabel.setManaged(false);
             List<AiModel> models = configManager.getModels();
             if (models.isEmpty()) {
                 modelData.clear();
                 totalCostLabel.setText("$0.00");
                 totalTokensLabel.setText("0");
+                statusLabel.setText("No models configured. Click Settings to add one.");
+                statusLabel.setManaged(true);
                 return;
             }
             List<DashboardData> dashboard = usageService.refreshDashboard(models);
             modelData.setAll(dashboard);
             updateSummary(dashboard);
+            String globalError = dashboard.stream()
+                .filter(DashboardData::hasError)
+                .map(d -> d.getDisplayName() + ": " + d.getLastError())
+                .collect(java.util.stream.Collectors.joining(" | "));
+            if (!globalError.isEmpty()) {
+                statusLabel.setText(globalError);
+                statusLabel.setManaged(true);
+                statusLabel.setStyle("-fx-text-fill: #e74c3c;");
+            } else {
+                statusLabel.setText("Last refresh: " + java.time.LocalTime.now().toString().substring(0, 5));
+                statusLabel.setManaged(true);
+                statusLabel.setStyle("-fx-text-fill: #4caf50;");
+            }
         } catch (Exception e) {
             showAlert("Error", "Failed to refresh data: " + e.getMessage());
         }
