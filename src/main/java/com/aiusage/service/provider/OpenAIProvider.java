@@ -30,11 +30,13 @@ public class OpenAIProvider implements AiProvider {
         long startEpoch = startDate.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
         long endEpoch = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
 
-        HttpUrl url = HttpUrl.parse(baseUrl + "/organization/usage/completions").newBuilder()
+        String adminBase = baseUrl.replace("/v1", "").replace("v1", "");
+        HttpUrl url = HttpUrl.parse(adminBase + "/v1/organization/usage/completions").newBuilder()
             .addQueryParameter("start_time", String.valueOf(startEpoch))
             .addQueryParameter("end_time", String.valueOf(endEpoch))
             .addQueryParameter("bucket_width", "1d")
             .addQueryParameter("limit", "31")
+            .addQueryParameter("group_by", "api_key_id")
             .build();
 
         Request request = new Request.Builder()
@@ -45,10 +47,15 @@ public class OpenAIProvider implements AiProvider {
             .build();
 
         try (Response response = client.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
-                throw new IOException("OpenAI API error: " + response.code() + " " + response.body().string());
+                String hint = response.code() == 404
+                    ? "The Usage API requires an Admin API key (Settings → Organization → Admin keys), not a project key."
+                    : "";
+                throw new IOException("OpenAI usage API error: " + response.code()
+                    + (hint.isEmpty() ? "" : " - " + hint)
+                    + " " + body);
             }
-            String body = response.body().string();
             return parseUsageResponse(body);
         }
     }
@@ -59,11 +66,13 @@ public class OpenAIProvider implements AiProvider {
         long startEpoch = startDate.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
         long endEpoch = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
 
-        HttpUrl url = HttpUrl.parse(baseUrl + "/organization/costs").newBuilder()
+        String adminBase = baseUrl.replace("/v1", "").replace("v1", "");
+        HttpUrl url = HttpUrl.parse(adminBase + "/v1/organization/costs").newBuilder()
             .addQueryParameter("start_time", String.valueOf(startEpoch))
             .addQueryParameter("end_time", String.valueOf(endEpoch))
             .addQueryParameter("bucket_width", "1d")
             .addQueryParameter("limit", "31")
+            .addQueryParameter("group_by", "api_key_id")
             .build();
 
         Request request = new Request.Builder()
@@ -74,10 +83,15 @@ public class OpenAIProvider implements AiProvider {
             .build();
 
         try (Response response = client.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
             if (!response.isSuccessful()) {
-                throw new IOException("OpenAI Cost API error: " + response.code());
+                String hint = response.code() == 404
+                    ? "The Costs API requires an Admin API key (Settings → Organization → Admin keys), not a project key."
+                    : "";
+                throw new IOException("OpenAI cost API error: " + response.code()
+                    + (hint.isEmpty() ? "" : " - " + hint)
+                    + " " + body);
             }
-            String body = response.body().string();
             return parseCostResponse(body);
         }
     }
@@ -142,10 +156,16 @@ public class OpenAIProvider implements AiProvider {
                     if (resultsArr != null && resultsArr.isArray()) {
                         for (var r : resultsArr) {
                             CostData cd = new CostData();
-                            cd.setAmount(r.path("amount").asDouble(0.0));
-                            cd.setCurrency("USD");
-                            if (r.has("model") && !r.path("model").isNull()) {
-                                cd.setModel(r.path("model").asText());
+                            var amountNode = r.get("amount");
+                            if (amountNode != null && amountNode.isObject()) {
+                                cd.setAmount(amountNode.path("value").asDouble(0.0));
+                                cd.setCurrency(amountNode.path("currency").asText("usd"));
+                            } else {
+                                cd.setAmount(r.path("amount").asDouble(0.0));
+                                cd.setCurrency("usd");
+                            }
+                            if (r.has("line_item") && !r.path("line_item").isNull()) {
+                                cd.setModel(r.path("line_item").asText());
                             }
                             results.add(cd);
                         }
