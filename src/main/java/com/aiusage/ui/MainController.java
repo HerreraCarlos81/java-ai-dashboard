@@ -103,7 +103,34 @@ public class MainController {
         listTitle.getStyleClass().add("section-title");
 
         modelListView.setPrefHeight(400);
-        modelListView.setCellFactory(lv -> new ModelListCell());
+        modelListView.setCellFactory(lv -> {
+            ModelListCell cell = new ModelListCell();
+            cell.setBudgetClickHandler((modelName, currentBudget) -> {
+                String prompt = currentBudget > 0
+                    ? "Current budget: $" + String.format("%.2f", currentBudget)
+                    : "No budget set. Enter a monthly budget:";
+                TextInputDialog input = new TextInputDialog(currentBudget > 0 ? String.format("%.2f", currentBudget) : "");
+                input.setTitle("Monthly Budget");
+                input.setHeaderText("Set budget for " + modelName);
+                input.setContentText(prompt);
+                input.showAndWait().ifPresent(val -> {
+                    try {
+                        double newBudget = Double.parseDouble(val.trim());
+                        configManager.getCurrentConfig().getModels().stream()
+                            .filter(m -> m.getName().equals(modelName))
+                            .findFirst()
+                            .ifPresent(m -> m.setMonthlyBudget(newBudget));
+                        configManager.saveConfig();
+                        refreshData();
+                    } catch (NumberFormatException ex) {
+                        showAlert("Invalid budget", "Enter a valid number.");
+                    } catch (Exception ex) {
+                        showAlert("Error", "Failed to save budget: " + ex.getMessage());
+                    }
+                });
+            });
+            return cell;
+        });
         modelListView.getSelectionModel().selectedItemProperty().addListener(
             (obs, old, selected) -> showKeyDetails(selected)
         );
