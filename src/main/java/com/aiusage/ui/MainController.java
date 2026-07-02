@@ -47,7 +47,7 @@ public class MainController {
         this.totalTokensLabel = new Label();
         this.statusLabel = new Label();
         this.statusLabel.getStyleClass().add("status-label");
-        this.statusLabel.setManaged(false);
+        this.statusLabel.setMinHeight(20);
         this.showingKeyDetails = false;
         this.refreshBtn = new Button("Refresh");
         this.spinner = new ProgressIndicator();
@@ -192,7 +192,8 @@ public class MainController {
         refreshBtn.setDisable(true);
         spinner.setVisible(true);
         cacheService.invalidateCache();
-        statusLabel.setManaged(false);
+        statusLabel.setText("Refreshing...");
+        statusLabel.setStyle("-fx-text-fill: #888;");
 
         new Thread(() -> {
             try {
@@ -203,7 +204,7 @@ public class MainController {
                         totalCostLabel.setText("$0.00");
                         totalTokensLabel.setText("0");
                         statusLabel.setText("No models configured. Click Settings to add one.");
-                        statusLabel.setManaged(true);
+                        statusLabel.setStyle("-fx-text-fill: #888;");
                         refreshBtn.setDisable(false);
                         spinner.setVisible(false);
                     });
@@ -219,12 +220,10 @@ public class MainController {
                         .collect(java.util.stream.Collectors.joining(" | "));
                     if (!globalError.isEmpty()) {
                         statusLabel.setText(globalError);
-                        statusLabel.setManaged(true);
                         statusLabel.setStyle("-fx-text-fill: #e74c3c;");
                     } else {
                         statusLabel.setText("Last refresh: "
                             + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
-                        statusLabel.setManaged(true);
                         statusLabel.setStyle("-fx-text-fill: #4caf50;");
                     }
                     refreshBtn.setDisable(false);
