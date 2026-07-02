@@ -170,6 +170,9 @@ public class OpenAIProvider implements AiProvider {
                                 cd.setAmount(r.path("amount").asDouble(0.0));
                                 cd.setCurrency("usd");
                             }
+                            if (r.has("api_key_id") && !r.path("api_key_id").isNull()) {
+                                cd.setApiKeyId(r.path("api_key_id").asText());
+                            }
                             if (r.has("line_item") && !r.path("line_item").isNull()) {
                                 cd.setModel(r.path("line_item").asText());
                             }

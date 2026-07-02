@@ -18,6 +18,7 @@ public class AddModelDialog extends Dialog<ModelConfig> {
     private final TextField baseUrlField;
     private final TextField keyLabelField;
     private final PasswordField keyValueField;
+    private final CheckBox adminCheckBox;
     private final ObservableList<ModelConfig.ApiKeyConfig> keys;
     private final TableView<ModelConfig.ApiKeyConfig> keyTable;
 
@@ -65,12 +66,16 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         keyValueField = new PasswordField();
         keyValueField.setPromptText("sk-...");
 
+        adminCheckBox = new CheckBox("Admin");
+        adminCheckBox.setTooltip(new Tooltip("Admin key can fetch all org usage data (OpenAI only)"));
+
         Button addKeyBtn = new Button("Add");
         addKeyBtn.setOnAction(e -> addKey());
 
         HBox inlineAdd = new HBox(5,
             new Label("Label:"), keyLabelField,
             new Label("Key:"), keyValueField,
+            adminCheckBox,
             addKeyBtn
         );
         inlineAdd.setPadding(new Insets(5, 0, 5, 0));
@@ -90,6 +95,13 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         });
         keyCol.setPrefWidth(200);
 
+        TableColumn<ModelConfig.ApiKeyConfig, String> adminCol = new TableColumn<>("Admin");
+        adminCol.setCellValueFactory(cellData -> {
+            boolean admin = cellData.getValue().isAdmin();
+            return new javafx.beans.property.SimpleStringProperty(admin ? "Yes" : "");
+        });
+        adminCol.setPrefWidth(50);
+
         TableColumn<ModelConfig.ApiKeyConfig, Void> actionCol = new TableColumn<>();
         actionCol.setPrefWidth(60);
         actionCol.setCellFactory(col -> new TableCell<>() {
@@ -107,7 +119,7 @@ public class AddModelDialog extends Dialog<ModelConfig> {
             }
         });
 
-        keyTable.getColumns().addAll(labelCol, keyCol, actionCol);
+        keyTable.getColumns().addAll(labelCol, keyCol, adminCol, actionCol);
 
         VBox keySection = new VBox(5,
             new Label("API Keys:"),
@@ -158,9 +170,11 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         k.setLabel(label);
         k.setKey(key);
         k.setEnabled(true);
+        k.setAdmin(adminCheckBox.isSelected());
         keys.add(k);
         keyLabelField.clear();
         keyValueField.clear();
+        adminCheckBox.setSelected(false);
     }
 
     private void showError(String msg) {

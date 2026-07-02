@@ -97,7 +97,11 @@ public class ConfigManager {
         if (mc.getApiKeys() != null) {
             model.setApiKeys(mc.getApiKeys().stream()
                 .filter(ModelConfig.ApiKeyConfig::isEnabled)
-                .map(k -> new ApiKeyEntry(k.getId(), k.getLabel(), k.getKey()))
+                .map(k -> {
+                    ApiKeyEntry e = new ApiKeyEntry(k.getId(), k.getLabel(), k.getKey());
+                    e.setAdmin(k.isAdmin());
+                    return e;
+                })
                 .collect(Collectors.toList()));
         } else {
             model.setApiKeys(new ArrayList<>());

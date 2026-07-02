@@ -28,6 +28,7 @@ public class ModelConfig {
         private String label;
         private String key;
         private boolean enabled;
+        private boolean admin;
 
         public String getId() { return id; }
         public void setId(String id) { this.id = id; }
@@ -37,5 +38,7 @@ public class ModelConfig {
         public void setKey(String key) { this.key = key; }
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public boolean isAdmin() { return admin; }
+        public void setAdmin(boolean admin) { this.admin = admin; }
     }
 }

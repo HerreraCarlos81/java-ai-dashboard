@@ -26,6 +26,7 @@ public class SettingsDialog extends Dialog<Void> {
     private final TableView<ModelConfig.ApiKeyConfig> keyTable;
     private final TextField keyLabelField;
     private final PasswordField keyValueField;
+    private final CheckBox adminCheckBox;
     private final Button addKeyBtn;
     private final Label statusLabel;
 
@@ -90,6 +91,13 @@ public class SettingsDialog extends Dialog<Void> {
         });
         keyCol.setPrefWidth(180);
 
+        TableColumn<ModelConfig.ApiKeyConfig, String> adminCol = new TableColumn<>("Admin");
+        adminCol.setCellValueFactory(cellData -> {
+            boolean admin = cellData.getValue().isAdmin();
+            return new javafx.beans.property.SimpleStringProperty(admin ? "Yes" : "");
+        });
+        adminCol.setPrefWidth(50);
+
         TableColumn<ModelConfig.ApiKeyConfig, Void> actionCol = new TableColumn<>();
         actionCol.setPrefWidth(50);
         actionCol.setCellFactory(col -> new TableCell<>() {
@@ -111,12 +119,15 @@ public class SettingsDialog extends Dialog<Void> {
             }
         });
 
-        keyTable.getColumns().addAll(labelCol, keyCol, actionCol);
+        keyTable.getColumns().addAll(labelCol, keyCol, adminCol, actionCol);
 
         keyLabelField = new TextField();
         keyLabelField.setPromptText("e.g. Production");
         keyValueField = new PasswordField();
         keyValueField.setPromptText("sk-...");
+
+        adminCheckBox = new CheckBox("Admin");
+        adminCheckBox.setTooltip(new Tooltip("Admin key can fetch all org usage data (OpenAI only)"));
 
         addKeyBtn = new Button("Add Key");
         addKeyBtn.setOnAction(e -> addKey());
@@ -124,6 +135,7 @@ public class SettingsDialog extends Dialog<Void> {
         HBox inlineAdd = new HBox(5,
             new Label("Label:"), keyLabelField,
             new Label("Key:"), keyValueField,
+            adminCheckBox,
             addKeyBtn
         );
 
@@ -228,6 +240,7 @@ public class SettingsDialog extends Dialog<Void> {
         k.setLabel(label);
         k.setKey(key);
         k.setEnabled(true);
+        k.setAdmin(adminCheckBox.isSelected());
 
         if (selected.getApiKeys() == null) {
             selected.setApiKeys(new ArrayList<>());
@@ -236,6 +249,7 @@ public class SettingsDialog extends Dialog<Void> {
         keyList.add(k);
         keyLabelField.clear();
         keyValueField.clear();
+        adminCheckBox.setSelected(false);
         statusLabel.setText("Key added: " + label);
     }
 
