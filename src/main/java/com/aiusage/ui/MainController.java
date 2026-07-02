@@ -65,7 +65,7 @@ public class MainController {
         VBox listContainer = buildListContainer();
         HBox buttonBar = buildButtonBar();
 
-        root.getChildren().addAll(header, summaryBar, listContainer, buttonBar, statusLabel);
+        root.getChildren().addAll(header, summaryBar, listContainer, buttonBar);
         VBox.setVgrow(listContainer, Priority.ALWAYS);
         return root;
     }
@@ -166,7 +166,9 @@ public class MainController {
     private HBox buildButtonBar() {
         HBox bar = new HBox(10);
         bar.setPadding(new Insets(10, 0, 0, 0));
-        bar.setAlignment(Pos.CENTER_RIGHT);
+        bar.setAlignment(Pos.CENTER_LEFT);
+
+        statusLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 11px;");
 
         refreshBtn.getStyleClass().add("action-button");
         refreshBtn.setOnAction(e -> refreshData());
@@ -175,7 +177,9 @@ public class MainController {
         settingsBtn.getStyleClass().add("action-button");
         settingsBtn.setOnAction(e -> showSettingsDialog());
 
-        bar.getChildren().addAll(refreshBtn, spinner, settingsBtn);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        bar.getChildren().addAll(statusLabel, spacer, refreshBtn, spinner, settingsBtn);
         return bar;
     }
 
