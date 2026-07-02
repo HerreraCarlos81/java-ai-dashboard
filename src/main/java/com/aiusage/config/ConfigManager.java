@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.aiusage.model.AiModel;
 import com.aiusage.model.ApiKeyEntry;
+import com.aiusage.util.EncryptionUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class ConfigManager {
 
     private final ObjectMapper mapper;
     private final File configFile;
+    private final EncryptionUtil encryptionUtil;
     private AppConfig currentConfig;
 
     public ConfigManager() {
@@ -31,11 +33,13 @@ public class ConfigManager {
             .enable(SerializationFeature.INDENT_OUTPUT)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         this.configFile = CONFIG_DIR.resolve(CONFIG_FILE).toFile();
+        this.encryptionUtil = new EncryptionUtil();
     }
 
     public AppConfig loadConfig() throws IOException {
         if (configFile.exists()) {
             currentConfig = mapper.readValue(configFile, AppConfig.class);
+            decryptKeys(currentConfig);
         } else {
             CONFIG_DIR.toFile().mkdirs();
             currentConfig = createDefaultConfig();
@@ -46,7 +50,35 @@ public class ConfigManager {
 
     public void saveConfig() throws IOException {
         CONFIG_DIR.toFile().mkdirs();
+        encryptKeys(currentConfig);
         mapper.writeValue(configFile, currentConfig);
+        decryptKeys(currentConfig);
+    }
+
+    private void encryptKeys(AppConfig config) {
+        if (config.getModels() == null) return;
+        for (ModelConfig model : config.getModels()) {
+            if (model.getApiKeys() == null) continue;
+            for (ModelConfig.ApiKeyConfig key : model.getApiKeys()) {
+                String raw = key.getKey();
+                if (raw != null && !raw.isEmpty() && !EncryptionUtil.isEncrypted(raw)) {
+                    key.setKey(encryptionUtil.encrypt(raw));
+                }
+            }
+        }
+    }
+
+    private void decryptKeys(AppConfig config) {
+        if (config.getModels() == null) return;
+        for (ModelConfig model : config.getModels()) {
+            if (model.getApiKeys() == null) continue;
+            for (ModelConfig.ApiKeyConfig key : model.getApiKeys()) {
+                String val = key.getKey();
+                if (val != null && !val.isEmpty() && EncryptionUtil.isEncrypted(val)) {
+                    key.setKey(encryptionUtil.decrypt(val));
+                }
+            }
+        }
     }
 
     public List<AiModel> getModels() {
