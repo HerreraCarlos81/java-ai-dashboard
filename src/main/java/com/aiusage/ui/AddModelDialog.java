@@ -150,7 +150,7 @@ public class AddModelDialog extends Dialog<ModelConfig> {
         VBox content = new VBox(10, modelPane, keyPane);
         content.setPadding(new Insets(10));
         getDialogPane().setContent(content);
-        getDialogPane().setPrefSize(550, 420);
+        getDialogPane().setPrefSize(550, 460);
 
         setResultConverter(dialogButton -> {
             if (dialogButton != saveButtonType) return null;
