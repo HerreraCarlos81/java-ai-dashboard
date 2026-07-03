@@ -20,7 +20,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class MainController {
     private final ConfigManager configManager;
@@ -116,37 +115,7 @@ public class MainController {
         modelListView.setPrefHeight(400);
         modelListView.setCellFactory(lv -> {
             ModelListCell cell = new ModelListCell();
-            cell.setBudgetClickHandler((modelName, currentBudget) -> {
-                String prompt = currentBudget > 0
-                    ? "Current budget: $" + String.format("%.2f", currentBudget)
-                    : "No budget set. Enter a monthly budget (e.g. 50.00):";
-                TextInputDialog input = new TextInputDialog(currentBudget > 0 ? String.format("%.2f", currentBudget) : "");
-                input.setTitle("Monthly Budget");
-                input.setHeaderText("Set budget for " + modelName);
-                input.setContentText(prompt);
-                Label iconLabel = new Label("\uD83D\uDCB0");
-                iconLabel.setStyle("-fx-font-size: 24px;");
-                input.getDialogPane().setGraphic(iconLabel);
-                input.showAndWait().ifPresent(val -> {
-                    String trimmed = val.trim();
-                    if (!Pattern.matches("^\\d+(\\.\\d{1,2})?$", trimmed)) {
-                        showAlert("Invalid Format",
-                            "Enter a number with up to 2 decimal places (e.g. 50.00).");
-                        return;
-                    }
-                    try {
-                        double newBudget = Double.parseDouble(trimmed);
-                        configManager.getCurrentConfig().getModels().stream()
-                            .filter(m -> m.getName().equals(modelName))
-                            .findFirst()
-                            .ifPresent(m -> m.setMonthlyBudget(newBudget));
-                        configManager.saveConfig();
-                        refreshData();
-                    } catch (Exception ex) {
-                        showAlert("Error", "Failed to save budget: " + ex.getMessage());
-                    }
-                });
-            });
+            cell.setBudgetClickHandler(this::handleBudgetClick);
             return cell;
         });
         modelListView.getSelectionModel().selectedItemProperty().addListener(
@@ -290,6 +259,44 @@ public class MainController {
             alert.setHeaderText(null);
             alert.setContentText(message);
             alert.showAndWait();
+        });
+    }
+
+    /**
+     * Opens a text-input dialog to set or edit a model's monthly budget.
+     * Validates the input as a positive number with up to 2 decimal places,
+     * persists the value to config, and triggers a dashboard refresh.
+     */
+    private void handleBudgetClick(String modelName, double currentBudget) {
+        String prompt = currentBudget > 0
+            ? "Current budget: $" + String.format("%.2f", currentBudget)
+            : "No budget set. Enter a monthly budget (e.g. 50.00):";
+        TextInputDialog input = new TextInputDialog(
+            currentBudget > 0 ? String.format("%.2f", currentBudget) : "");
+        input.setTitle("Monthly Budget");
+        input.setHeaderText("Set budget for " + modelName);
+        input.setContentText(prompt);
+        Label iconLabel = new Label("\uD83D\uDCB0");
+        iconLabel.setStyle("-fx-font-size: 24px;");
+        input.getDialogPane().setGraphic(iconLabel);
+        input.showAndWait().ifPresent(val -> {
+            String trimmed = val.trim();
+            if (!trimmed.matches("^\\d+(\\.\\d{1,2})?$")) {
+                showAlert("Invalid Format",
+                    "Enter a number with up to 2 decimal places (e.g. 50.00).");
+                return;
+            }
+            try {
+                double newBudget = Double.parseDouble(trimmed);
+                configManager.getCurrentConfig().getModels().stream()
+                    .filter(m -> m.getName().equals(modelName))
+                    .findFirst()
+                    .ifPresent(m -> m.setMonthlyBudget(newBudget));
+                configManager.saveConfig();
+                refreshData();
+            } catch (Exception ex) {
+                showAlert("Error", "Failed to save budget: " + ex.getMessage());
+            }
         });
     }
 }

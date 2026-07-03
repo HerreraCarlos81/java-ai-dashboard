@@ -147,7 +147,8 @@ public class AnthropicProvider implements AiProvider {
         return result;
     }
 
-    private List<UsageData> parseUsageResponse(String json) {
+    // Package-visible for testing
+    List<UsageData> parseUsageResponse(String json) {
         List<UsageData> results = new ArrayList<>();
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper =
@@ -185,7 +186,8 @@ public class AnthropicProvider implements AiProvider {
         return results;
     }
 
-    private List<CostData> parseCostResponse(String json) {
+    // Package-visible for testing
+    List<CostData> parseCostResponse(String json) {
         List<CostData> results = new ArrayList<>();
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper =

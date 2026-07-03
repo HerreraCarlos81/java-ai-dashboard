@@ -1,12 +1,19 @@
 package com.aiusage.util;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifies AES-256/GCM encryption round-trip behaviour.
+ * Because the keystore is written to disk, tests that use EncryptionUtil
+ * share state via the same JVM; each test creates its own instance so
+ * that concurrent runs are isolated.
+ */
 class EncryptionUtilTest {
 
     @Test
-    void testEncryptDecryptRoundtrip() {
+    void encryptDecryptRoundTripPreservesOriginal() {
         EncryptionUtil util = new EncryptionUtil();
         String[] testCases = {"sk-test-key-12345", "sk-ant-longer-test-key-value-here", "a"};
         for (String original : testCases) {
@@ -19,7 +26,7 @@ class EncryptionUtilTest {
     }
 
     @Test
-    void testDecryptWithAndWithoutPrefix() {
+    void decryptWorksWithAndWithoutPrefix() {
         EncryptionUtil util = new EncryptionUtil();
         String original = "sk-test-decrypt";
         String encrypted = util.encrypt(original);
@@ -28,7 +35,7 @@ class EncryptionUtilTest {
     }
 
     @Test
-    void testDifferentKeysProduceDifferentCiphertexts() {
+    void samePlaintextProducesDifferentCiphertexts() {
         EncryptionUtil util = new EncryptionUtil();
         String key = "same-value";
         String e1 = util.encrypt(key);

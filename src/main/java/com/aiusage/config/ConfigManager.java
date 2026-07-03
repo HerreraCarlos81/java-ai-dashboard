@@ -21,7 +21,6 @@ public class ConfigManager {
         System.getProperty("user.home"), ".ai-usage-dashboard"
     );
     private static final String CONFIG_FILE = "config.json";
-    private static final String SAMPLE_CONFIG_RESOURCE = "/sample-config.json";
 
     private final ObjectMapper mapper;
     private final File configFile;
@@ -55,6 +54,8 @@ public class ConfigManager {
         decryptKeys(currentConfig);
     }
 
+    // Keys are encrypted before serialisation and decrypted after loading.
+    // This keeps plaintext keys in memory only during the application session.
     private void encryptKeys(AppConfig config) {
         if (config.getModels() == null) return;
         for (ModelConfig model : config.getModels()) {
